@@ -163,10 +163,23 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 
 .footer{border-top:1px solid var(--border);padding:18px 32px;display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;flex-wrap:wrap;gap:6px}
 
+/* TOOLTIP */
+.tooltip-wrap{position:relative;display:inline-flex;align-items:center}
+.tooltip-icon{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--text3);font-size:9px;cursor:help;margin-left:7px;font-family:'DM Mono',monospace;flex-shrink:0;transition:border-color .15s,color .15s;line-height:1}
+.tooltip-icon:hover{border-color:var(--xi2);color:var(--xi2)}
+.tooltip-box{display:none;position:absolute;top:calc(100% + 10px);left:0;z-index:300;background:var(--bg2);border:1px solid var(--border2);border-radius:13px;padding:18px;width:360px;box-shadow:0 12px 40px rgba(0,0,0,0.6);font-size:11px;line-height:1.75;color:var(--text2)}
+.tooltip-wrap:hover .tooltip-box{display:block}
+.tooltip-factor{margin-bottom:11px}
+.tooltip-factor:last-of-type{margin-bottom:0}
+.tooltip-factor-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px}
+.tooltip-kws{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;line-height:1.9}
+.tooltip-divider{border-top:1px solid var(--border);margin:12px 0}
+.tooltip-logic{font-size:10px;color:var(--text3);line-height:1.8}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .sov-section{animation:fadeUp .4s ease both .05s}
-.sent-section{animation:fadeUp .4s ease both .1s}
-.health-section{animation:fadeUp .4s ease both .15s}
+.health-section{animation:fadeUp .4s ease both .1s}
+.sent-section{animation:fadeUp .4s ease both .15s}
 .buzz-section{animation:fadeUp .4s ease both .2s}
 .hot-section{animation:fadeUp .4s ease both .25s}
 .issue-section{animation:fadeUp .4s ease both .3s}
@@ -249,9 +262,50 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
     </div>
   </div>
 
-  <!-- 02 SENTIMENT -->
+  <!-- 02 HEALTH -->
+  <div class="health-section">
+    <div class="section-label">🏆 브랜드 경쟁력 스코어 <span class="tag">02</span>
+      <div class="tooltip-wrap">
+        <span class="tooltip-icon">?</span>
+        <div class="tooltip-box">
+          <div class="tooltip-factor">
+            <div class="tooltip-factor-name">🏆 브랜드 파워</div>
+            <div class="tooltip-kws">긍정 버즈 비율 × 0.6 + 전체 버즈 점유율 × 0.4<br>→ 브랜드 인지도·호감도 종합 지수</div>
+          </div>
+          <div class="tooltip-factor">
+            <div class="tooltip-factor-name">🔨 시공·품질</div>
+            <div class="tooltip-kws">하자 · 결함 · 균열 · 누수 · 곰팡이 · 결로 · 층간소음 · 부실<br>→ 부정 키워드 언급 비율이 낮을수록 고점</div>
+          </div>
+          <div class="tooltip-factor">
+            <div class="tooltip-factor-name">💰 투자 가치</div>
+            <div class="tooltip-kws">긍정: 청약 · 시세차익 · 상승 · 당첨 · 재건축 · 프리미엄 붙 · 분양 완판<br>부정: 미분양 · 입주 지연 · PF · 공사 중단<br>→ (긍정 − 부정) 버즈 차이로 산출</div>
+          </div>
+          <div class="tooltip-factor">
+            <div class="tooltip-factor-name">🌿 주거 환경</div>
+            <div class="tooltip-kws">긍정: 쾌적 · 조용 · 커뮤니티 좋 · 경관 좋 · 편의시설 · 학군 · 녹지<br>부정: 주차 부족 · 관리비 비싸 · 시끄럽 · 좁아<br>→ (긍정 − 부정) 버즈 차이로 산출</div>
+          </div>
+          <div class="tooltip-factor">
+            <div class="tooltip-factor-name">🤖 스마트·친환경</div>
+            <div class="tooltip-kws">스마트홈 · IoT · 친환경 · 에너지 · 공기질 · 스마트 케어<br>→ 관련 버즈 언급 비율로 산출</div>
+          </div>
+          <div class="tooltip-divider"></div>
+          <div class="tooltip-logic">
+            📐 <strong style="color:var(--text)">산출 방식</strong><br>
+            각 요인별 키워드를 포함한 버즈를 브랜드 전체 버즈 대비 비율로 계산 후 0–100점 환산.<br>
+            5개 요인 단순 평균 = 종합 점수.<br>
+            <span style="color:var(--xi2)">부동산R114 2025 브랜드 선호도 조사 항목 기반.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="health-grid" id="healthGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">📡 데이터 불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- 03 SENTIMENT -->
   <div class="sent-section">
-    <div class="section-label">🎭 감성별 버즈 점유율 <span class="tag">02</span></div>
+    <div class="section-label">🎭 감성별 버즈 점유율 <span class="tag">03</span></div>
     <div class="sent-grid">
       <div class="sent-card"><div class="sent-card-title">📊 전체 SOV</div><div class="sent-donut-wrap"><svg viewBox="0 0 80 80" id="sd0"></svg><div class="sent-donut-center" style="color:var(--text)">전체</div></div><div class="sent-legend" id="sl0"></div></div>
       <div class="sent-card"><div class="sent-card-title">🟢 긍정 SOV</div><div class="sent-donut-wrap"><svg viewBox="0 0 80 80" id="sd1"></svg><div class="sent-donut-center" style="color:var(--pos)">긍정</div></div><div class="sent-legend" id="sl1"></div></div>
@@ -260,19 +314,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
     </div>
   </div>
 
-  <!-- 03 HEALTH -->
-  <div class="health-section">
-    <div class="section-label">🏆 브랜드 경쟁력 스코어 <span class="tag">03</span>
-      <span style="font-size:11px;color:var(--text3);font-weight:400;margin-left:4px">버즈 데이터 기반 자동 산출 · 5개 요소</span>
-    </div>
-    <div class="health-grid" id="healthGrid">
-      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">📡 데이터 불러오는 중...</div>
-    </div>
-  </div>
-
   <!-- 04 BUZZ -->
   <div class="buzz-section">
     <div class="section-label">📣 브랜드별 버즈량 <span class="tag">04</span></div>
+
     <div class="buzz-grid" id="buzzGrid">
       <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3);font-size:13px">📡 데이터 불러오는 중...</div>
     </div>
@@ -622,12 +667,64 @@ async function loadFromSheets(){
     // 연관 kw SOV
     document.querySelectorAll('.kw-btn').forEach(btn=>{const kw=btn.textContent.trim();if(kw==='전체')return;const kd={};BRANDS.forEach(b=>kd[b]=0);items.forEach(i=>{if((i.제목+' '+i.내용요약).includes(kw)&&kd[i.브랜드]!==undefined)kd[i.브랜드]++;});SOV[kw]=kd;});
 
-    // 핵심 키워드
-    const SW=new Set(['이','그','저','것','수','있','없','하','되','않','같','때','더','또','및','등','를','을','가','은','는','로','에','의','와','과','한','된','으로','에서','에게','하여','하는','하고','이다','합니다','있다','없다','됩니다','했다','한다','이런','정말','진짜','너무','서비스','이용','사용','단지','아파트','브랜드','입주민','분양','세대','관련','확인','진행']);
-    const bkm={};BRANDS.forEach(b=>bkm[b]={});
-    items.forEach(i=>{const b=i.브랜드;if(!bkm[b])return;const words=(i.제목+' '+i.내용요약).replace(/https?:\/\/\S+/gi,' ').replace(/[^\w가-힣\s]/g,' ').split(/\s+/).map(w=>w.trim()).filter(w=>w.length>=2&&!SW.has(w)&&!/^\d+$/.test(w)&&!BRANDS.some(br=>w.includes(br)));words.forEach(w=>{bkm[b][w]=(bkm[b][w]||0)+1;});});
+    // ── 핵심 키워드 (개선된 3단계 필터) ─────────────────
+    const SW=new Set([
+      '이','그','저','것','수','있','없','하','되','않','같','때','더','또','및','등',
+      '를','을','가','은','는','로','에','의','와','과','한','된','으로','에서','에게',
+      '하여','하는','하고','이다','합니다','있다','없다','됩니다','했다','한다',
+      '이런','정말','진짜','너무',
+      // 부동산 공통 일반어
+      '서비스','이용','사용','단지','아파트','브랜드','입주민','분양','세대',
+      '관련','확인','진행','제공','운영','기반','지원','도입',
+      '매매','전세','월세','시세','실거래','가격','평균','거래','공급','수요',
+      '부동산','분양가','입주율','시장','주택','공사','건설',
+      // 시간성
+      '추이','현황','동향','최근','올해','작년','상반기','하반기',
+      '1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월',
+      '상승세','하락세','연초','연말','지난해','올초',
+      // 활용어·형용사
+      '펼치고','펼쳐','보이는','나오는','있는','없는','되는','하는','같은',
+      '많은','적은','높은','낮은','좋은','나쁜','새로운','기존','다양한','최근에',
+      '내용','정보','안내','공지','발표','기준','변경','업데이트',
+      '기사','뉴스','포스팅','블로그','카페','후기','게시',
+    ]);
+    const bkm={};
+    BRANDS.forEach(b=>bkm[b]={});
+    items.forEach(i=>{
+      const b=i.브랜드;if(!bkm[b])return;
+      const words=(i.제목+' '+i.내용요약)
+        .replace(/https?:\/\/\S+/gi,' ')
+        .replace(/[^\w가-힣\s]/g,' ')
+        .split(/\s+/).map(w=>w.trim())
+        .filter(w=>
+          w.length>=2&&!SW.has(w)&&
+          !/^\d+$/.test(w)&&!/^\d/.test(w)&&
+          !/^[a-zA-Z]+$/.test(w)&&
+          !BRANDS.some(br=>w.includes(br))
+        );
+      words.forEach(w=>{bkm[b][w]=(bkm[b][w]||0)+1;});
+    });
+    // ── 공통 키워드 집계 ─────────────────────────────────
+    const crossBrandCnt={};
+    BRANDS.forEach(b=>Object.keys(bkm[b]).forEach(w=>{crossBrandCnt[w]=(crossBrandCnt[w]||0)+1;}));
     const kwListEl=document.getElementById('brandKwList');kwListEl.innerHTML='';
-    BRANDS.forEach(b=>{const isXi=b==='자이';const topKws=Object.entries(bkm[b]).sort((a,c)=>c[1]-a[1]).slice(0,5).map(([w])=>w);if(!topKws.length)return;const chips=topKws.map(w=>`<span class="brand-chip${isXi?' xi':''}">${w}</span>`).join('');kwListEl.innerHTML+=`<div class="brand-kw-item"><span class="brand-kw-name" style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span><div class="brand-kw-chips">${chips}</div></div>`;});
+    BRANDS.forEach(b=>{
+      const isXi=b==='자이';
+      const myTotal=Object.values(bkm[b]).reduce((s,v)=>s+v,0)||1;
+      const FREQ_TH=Math.max(5,Math.round(myTotal*0.02));
+      const topKws=Object.entries(bkm[b])
+        .filter(([w,myCount])=>{
+          const inN=crossBrandCnt[w]||1;
+          if(inN<3) return true;
+          if(myCount>=FREQ_TH) return true;
+          const maxCnt=Math.max(...BRANDS.map(br=>bkm[br][w]||0));
+          return myCount===maxCnt;
+        })
+        .sort((a,c)=>c[1]-a[1]).slice(0,5).map(([w])=>w);
+      if(!topKws.length)return;
+      const chips=topKws.map(w=>`<span class="brand-chip${isXi?' xi':''}">${w}</span>`).join('');
+      kwListEl.innerHTML+=`<div class="brand-kw-item"><span class="brand-kw-name" style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span><div class="brand-kw-chips">${chips}</div></div>`;
+    });
 
     // 버즈 카드
     const bm={};BRANDS.forEach(b=>{bm[b]={count:0,pos:0,neg:0,neu:0};});
