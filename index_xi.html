@@ -163,6 +163,12 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
 
 .footer{border-top:1px solid var(--border);padding:18px 32px;display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;flex-wrap:wrap;gap:6px}
 
+/* FACTOR DETAIL TIP */
+.factor-item{position:relative}
+.factor-detail-tip{display:none;position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);z-index:400;background:#1a1a24;border:1px solid rgba(255,255,255,0.15);border-radius:9px;padding:9px 13px;font-size:10px;font-family:'DM Mono',monospace;color:#c8c8e0;white-space:nowrap;box-shadow:0 6px 24px rgba(0,0,0,0.55);pointer-events:none;line-height:1.6}
+.factor-detail-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#1a1a24}
+.factor-item:hover .factor-detail-tip{display:block}
+
 /* TOOLTIP */
 .tooltip-wrap{position:relative;display:inline-flex;align-items:center}
 .tooltip-icon{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--text3);font-size:9px;cursor:help;margin-left:7px;font-family:'DM Mono',monospace;flex-shrink:0;transition:border-color .15s,color .15s;line-height:1}
@@ -228,7 +234,8 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
           <svg viewBox="0 0 100 100" id="mainDonutSvg"></svg>
           <div class="donut-center">
             <div class="donut-total" id="donutTotal">-</div>
-            <div class="donut-unit">건</div>
+            <div class="donut-unit">건 (전체)</div>
+            <div class="donut-period" id="donutPeriod" style="font-size:9px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:3px;line-height:1.4;text-align:center"></div>
           </div>
         </div>
         <div class="legend" id="mainLegend"></div>
@@ -486,6 +493,13 @@ function renderMainDonut(){
   const filtered=mkDonut('mainDonutSvg','50','50',37,SOV.all);
   const total=Object.values(filtered).reduce((a,b)=>a+b,0)||0;
   document.getElementById('donutTotal').textContent=total.toLocaleString();
+  // 기간 표시
+  const pEl=document.getElementById('donutPeriod');
+  if(pEl&&allItems.length){
+    const dates=allItems.map(i=>i.작성일).filter(Boolean).sort();
+    const dFrom=dates[0]?.slice(0,7)||'';const dTo=dates[dates.length-1]?.slice(0,7)||'';
+    pEl.textContent=dFrom===dTo?dFrom:(dFrom+' ~\n'+dTo);
+  }
   const leg=document.getElementById('mainLegend');leg.innerHTML='';
   Object.entries(filtered).sort((a,b)=>b[1]-a[1]).forEach(([brand,raw])=>{
     const pct=Math.round(raw/total*100)||0,isXi=brand==='자이';
@@ -572,7 +586,9 @@ function calcHealthScores(items){
     const bi=items.filter(i=>i.브랜드===b),total=bi.length||1;
     const pos=bi.filter(i=>i.감성==='긍정').length;
     const totalAll=items.length||1;
-    const brandPower=Math.min(100,Math.round((pos/total)*100*0.6+(total/totalAll)*100*0.4*3));
+    const posRatio=Math.round((pos/total)*100);
+    const sovRatio=Math.round((total/totalAll)*100);
+    const brandPower=Math.min(100,Math.round(posRatio*0.6+sovRatio*0.4*3));
     const constNeg=bi.filter(i=>FKW.시공부정.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
     const constScore=Math.max(0,Math.round(100-(constNeg/total)*300));
     const invPos=bi.filter(i=>FKW.투자긍정.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
@@ -584,11 +600,16 @@ function calcHealthScores(items){
     const smartCnt=bi.filter(i=>FKW.스마트.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
     const smartScore=Math.min(100,Math.round(30+(smartCnt/total)*700));
     scores[b]={total:Math.round((brandPower+constScore+invScore+livScore+smartScore)/5),factors:[
-      {name:'브랜드 파워',val:brandPower,icon:'🏆'},
-      {name:'시공·품질', val:constScore,icon:'🔨'},
-      {name:'투자 가치', val:invScore,  icon:'💰'},
-      {name:'주거 환경', val:livScore,  icon:'🌿'},
-      {name:'스마트·친환경',val:smartScore,icon:'🤖'},
+      {name:'브랜드 파워',val:brandPower,icon:'🏆',
+       detail:`긍정버즈 ${pos}건(${posRatio}%)×0.6 + 버즈점유율 ${sovRatio}%×0.4×3 = ${brandPower}점`},
+      {name:'시공·품질', val:constScore,icon:'🔨',
+       detail:`시공부정 키워드 ${constNeg}건 → 100 − (${constNeg}/${total})×300 = ${constScore}점`},
+      {name:'투자 가치', val:invScore,  icon:'💰',
+       detail:`투자긍정 ${invPos}건 − 투자부정 ${invNeg}건 = ${invPos-invNeg > 0?'+':''}${invPos-invNeg} → 50+(${invPos-invNeg}/${total})×200 = ${invScore}점`},
+      {name:'주거 환경', val:livScore,  icon:'🌿',
+       detail:`거주긍정 ${livPos}건 − 거주부정 ${livNeg}건 = ${livPos-livNeg > 0?'+':''}${livPos-livNeg} → 50+(${livPos-livNeg}/${total})×200 = ${livScore}점`},
+      {name:'스마트·친환경',val:smartScore,icon:'🤖',
+       detail:`스마트 키워드 ${smartCnt}건 → 30+(${smartCnt}/${total})×700 = ${smartScore}점`},
     ]};
   });
   return scores;
@@ -608,9 +629,10 @@ function renderHealthGrid(scores){
       <div class="health-score-total" style="color:${isXi?'#60a5fa':BC[b]}">${s.total}</div>
       <div class="health-score-label">/ 100점</div>
       <div class="factor-list">${s.factors.map(f=>`
-        <div class="factor-item">
+        <div class="factor-item" style="position:relative">
           <div class="factor-top"><span class="factor-name">${f.icon} ${f.name}</span><span class="factor-val">${f.val}</span></div>
           <div class="factor-bar"><div class="factor-fill" style="width:${f.val}%;background:${BC[b]}"></div></div>
+          <div class="factor-detail-tip">${f.detail}</div>
         </div>`).join('')}</div>`;
     grid.appendChild(card);
   });
@@ -667,91 +689,30 @@ async function loadFromSheets(){
     // 연관 kw SOV
     document.querySelectorAll('.kw-btn').forEach(btn=>{const kw=btn.textContent.trim();if(kw==='전체')return;const kd={};BRANDS.forEach(b=>kd[b]=0);items.forEach(i=>{if((i.제목+' '+i.내용요약).includes(kw)&&kd[i.브랜드]!==undefined)kd[i.브랜드]++;});SOV[kw]=kd;});
 
-    // ── 핵심 키워드 (개선된 3단계 필터) ─────────────────
-    const SW=new Set([
-      '이','그','저','것','수','있','없','하','되','않','같','때','더','또','및','등',
-      '를','을','가','은','는','로','에','의','와','과','한','된','으로','에서','에게',
-      '하여','하는','하고','이다','합니다','있다','없다','됩니다','했다','한다',
-      '이런','정말','진짜','너무',
-      // 부동산 공통 일반어
-      '서비스','이용','사용','단지','아파트','브랜드','입주민','분양','세대',
-      '관련','확인','진행','제공','운영','기반','지원','도입',
-      '매매','전세','월세','시세','실거래','가격','평균','거래','공급','수요',
-      '부동산','분양가','입주율','시장','주택','공사','건설',
-      // 시간성
-      '추이','현황','동향','최근','올해','작년','상반기','하반기',
-      '1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월',
-      '상승세','하락세','연초','연말','지난해','올초',
-      // 활용어·형용사
-      '펼치고','펼쳐','보이는','나오는','있는','없는','되는','하는','같은',
-      '많은','적은','높은','낮은','좋은','나쁜','새로운','기존','다양한','최근에',
-      '내용','정보','안내','공지','발표','기준','변경','업데이트',
-      '기사','뉴스','포스팅','블로그','카페','후기','게시',
-    ]);
+    // ── 핵심 키워드 — 주거 도메인 사전 기반 Top10 ──────
+    const HOUSING_DICT={
+      '시공·품질': ['하자','균열','누수','결로','곰팡이','층간소음','단열','마감','내구성','부실','방음','결함','침수'],
+      '투자·시세': ['시세차익','프리미엄','상승','재건축','재개발','청약','당첨','분양권','갭투자','호가','시세상승','투자가치'],
+      '주거환경':  ['커뮤니티','조경','학군','교통','편의시설','쾌적','녹지','주차','관리비','경관','단지환경','어린이집','헬스장'],
+      '스마트·친환경':['스마트홈','IoT','친환경','에너지','공기질','EV충전','태양광','스마트케어','홈네트워크','스마트'],
+      '긍정 반응': ['좋아요','추천','만족','훌륭','최고','강추','기대','살기좋','완판','선호','인기','호평'],
+      '부정 반응': ['불만','실망','최악','항의','소송','피해','부실시공','하자보수','민원','갑질','불편'],
+    };
+    const ALL_DICT_KWS=Object.values(HOUSING_DICT).flat();
     const bkm={};
     BRANDS.forEach(b=>bkm[b]={});
     items.forEach(i=>{
       const b=i.브랜드;if(!bkm[b])return;
-      const words=(i.제목+' '+i.내용요약)
-        .replace(/https?:\/\/\S+/gi,' ')
-        .replace(/[^\w가-힣\s]/g,' ')
-        .split(/\s+/).map(w=>w.trim())
-        .filter(w=>
-          w.length>=2&&!SW.has(w)&&
-          !/^\d+$/.test(w)&&!/^\d/.test(w)&&
-          !/^[a-zA-Z]+$/.test(w)&&
-          !BRANDS.some(br=>w.includes(br))
-        );
-      words.forEach(w=>{bkm[b][w]=(bkm[b][w]||0)+1;});
+      const text=i.제목+' '+i.내용요약;
+      ALL_DICT_KWS.forEach(kw=>{if(text.includes(kw))bkm[b][kw]=(bkm[b][kw]||0)+1;});
     });
-    // ── 공통 키워드 집계 ─────────────────────────────────
-    const crossBrandCnt={};
-    BRANDS.forEach(b=>Object.keys(bkm[b]).forEach(w=>{crossBrandCnt[w]=(crossBrandCnt[w]||0)+1;}));
     const kwListEl=document.getElementById('brandKwList');kwListEl.innerHTML='';
     BRANDS.forEach(b=>{
       const isXi=b==='자이';
-      const myTotal=Object.values(bkm[b]).reduce((s,v)=>s+v,0)||1;
-      const FREQ_TH=Math.max(5,Math.round(myTotal*0.02));
-      const topKws=Object.entries(bkm[b])
-        .filter(([w,myCount])=>{
-          const inN=crossBrandCnt[w]||1;
-          if(inN<3) return true;
-          if(myCount>=FREQ_TH) return true;
-          const maxCnt=Math.max(...BRANDS.map(br=>bkm[br][w]||0));
-          return myCount===maxCnt;
-        })
-        .sort((a,c)=>c[1]-a[1]).slice(0,5).map(([w])=>w);
+      const topKws=Object.entries(bkm[b]).sort((a,c)=>c[1]-a[1]).slice(0,10).map(([w])=>w);
       if(!topKws.length)return;
       const chips=topKws.map(w=>`<span class="brand-chip${isXi?' xi':''}">${w}</span>`).join('');
       kwListEl.innerHTML+=`<div class="brand-kw-item"><span class="brand-kw-name" style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span><div class="brand-kw-chips">${chips}</div></div>`;
-    });
-
-    // 버즈 카드
-    const bm={};BRANDS.forEach(b=>{bm[b]={count:0,pos:0,neg:0,neu:0};});
-    items.forEach(i=>{const b=i.브랜드;if(!bm[b])return;bm[b].count++;if(i.감성==='긍정')bm[b].pos++;else if(i.감성==='부정')bm[b].neg++;else bm[b].neu++;});
-    const buzzGrid=document.getElementById('buzzGrid');buzzGrid.innerHTML='';
-    [...BRANDS].filter(b=>activeBrands.has(b)).sort((a,b)=>bm[b].count-bm[a].count).forEach(b=>{
-      const d=bm[b],isXi=b==='자이';
-      const pPct=d.count?Math.round(d.pos/d.count*100):0,nPct=d.count?Math.round(d.neg/d.count*100):0,nuPct=100-pPct-nPct;
-      const card=document.createElement('div');
-      card.className='buzz-card'+(isXi?' xi-card':'');
-      card.innerHTML=`
-        <div class="buzz-brand">
-          <span style="display:inline-block;width:${isXi?9:7}px;height:${isXi?9:7}px;border-radius:50%;background:${BC[b]};flex-shrink:0"></span>
-          <span style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span>
-        </div>
-        <div class="buzz-count" style="color:${isXi?'#60a5fa':BC[b]}">${d.count.toLocaleString()}<span style="font-size:12px;color:var(--text3);margin-left:3px">건</span></div>
-        <div class="buzz-sent-row">
-          <div class="buzz-sent-item">🟢 <span>${pPct}%</span></div>
-          <div class="buzz-sent-item">🔴 <span>${nPct}%</span></div>
-          <div class="buzz-sent-item">🟡 <span>${nuPct}%</span></div>
-        </div>
-        <div class="buzz-bar-stack">
-          <div class="bstack-pos" style="flex:${pPct}"></div>
-          <div class="bstack-neg" style="flex:${nPct}"></div>
-          <div class="bstack-neu" style="flex:${nuPct}"></div>
-        </div>`;
-      buzzGrid.appendChild(card);
     });
 
     // Hot 이슈
