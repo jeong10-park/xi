@@ -250,15 +250,11 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-seri
           <div class="card-title" style="margin-bottom:10px">연관 키워드 SOV</div>
           <div class="kw-bar-wrap">
             <button class="kw-btn active" onclick="selectKw(this,'all')">전체</button>
-            <button class="kw-btn" onclick="selectKw(this,'하자')">하자</button>
-            <button class="kw-btn" onclick="selectKw(this,'청약')">청약</button>
-            <button class="kw-btn" onclick="selectKw(this,'분양')">분양</button>
-            <button class="kw-btn" onclick="selectKw(this,'커뮤니티')">커뮤니티</button>
-            <button class="kw-btn" onclick="selectKw(this,'시세')">시세</button>
-            <button class="kw-btn" onclick="selectKw(this,'층간소음')">층간소음</button>
-            <button class="kw-btn" onclick="selectKw(this,'입주')">입주</button>
-            <button class="kw-btn" onclick="selectKw(this,'재건축')">재건축</button>
-            <button class="kw-btn" onclick="selectKw(this,'스마트홈')">스마트홈</button>
+            <button class="kw-btn" onclick="selectKw(this,'브랜드파워')">🏆 브랜드 파워</button>
+            <button class="kw-btn" onclick="selectKw(this,'시공품질')">🔨 시공·품질</button>
+            <button class="kw-btn" onclick="selectKw(this,'투자가치')">💰 투자 가치</button>
+            <button class="kw-btn" onclick="selectKw(this,'주거환경')">🌿 주거 환경</button>
+            <button class="kw-btn" onclick="selectKw(this,'스마트친환경')">🤖 스마트·친환경</button>
           </div>
           <div id="kwSovChart"></div>
           <div class="divider" style="margin:16px 0"></div>
@@ -532,7 +528,18 @@ function renderKwSov(key){
 function selectKw(el,key){
   document.querySelectorAll('.kw-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
-  if(key!=='all'){const kd={};BRANDS.forEach(b=>kd[b]=0);allItems.forEach(i=>{if((i.제목+' '+i.내용요약).includes(key)&&kd[i.브랜드]!==undefined)kd[i.브랜드]++;});SOV[key]=kd;}
+  if(key!=='all'){
+    // 그룹 키워드 OR 검색
+    const grpKws=KW_GROUPS[key]||[key];
+    if(!SOV[key]){
+      const kd={};BRANDS.forEach(b=>kd[b]=0);
+      allItems.forEach(i=>{
+        const txt=i.제목+' '+i.내용요약;
+        if(grpKws.some(kw=>txt.includes(kw))&&kd[i.브랜드]!==undefined) kd[i.브랜드]++;
+      });
+      SOV[key]=kd;
+    }
+  }
   renderKwSov(key);
 }
 
@@ -579,6 +586,15 @@ const FKW={
   거주긍정:['쾌적','조용','커뮤니티 좋','경관 좋','편의시설','학군','녹지'],
   거주부정:['주차 부족','관리비 비싸','시끄럽','층간소음','좁아'],
   스마트:  ['스마트홈','IoT','친환경','에너지','공기질','스마트 케어'],
+};
+
+// ── 연관 키워드 SOV 그룹 (브랜드 경쟁력 5요인 기반) ──
+const KW_GROUPS={
+  브랜드파워: ['추천','선호','1위','브랜드','고급','인기','평판','신뢰','럭셔리','프리미엄'],
+  시공품질:   [...FKW.시공부정,'마감','단열','방음','시공','AS','하자보수'],
+  투자가치:   [...FKW.투자긍정,...FKW.투자부정,'입주','분양가','청약경쟁률','로또청약'],
+  주거환경:   [...FKW.거주긍정,...FKW.거주부정,'커뮤니티','조경','주차','관리비','학군','입지'],
+  스마트친환경:[...FKW.스마트,'EV충전','태양광','홈네트워크','스마트케어','공기청정'],
 };
 function calcHealthScores(items){
   const scores={};
@@ -656,7 +672,7 @@ function timeAgo(s){if(!s)return'';const d=new Date(s);if(isNaN(d))return s;cons
 
 async function loadFromSheets(){
   try{
-    const res=await fetch(SHEETS_BASE+'&range=A1:J200000');
+    const res=await fetch(SHEETS_BASE+'&range=A1:J100000');
     const text=await res.text();
     const json=JSON.parse(text.replace(/^.*?({.*}).*$/s,'$1'));
     const allRows=json.table?.rows||[];
@@ -687,7 +703,15 @@ async function loadFromSheets(){
     renderHealthGrid(calcHealthScores(items));
 
     // 연관 kw SOV
-    document.querySelectorAll('.kw-btn').forEach(btn=>{const kw=btn.textContent.trim();if(kw==='전체')return;const kd={};BRANDS.forEach(b=>kd[b]=0);items.forEach(i=>{if((i.제목+' '+i.내용요약).includes(kw)&&kd[i.브랜드]!==undefined)kd[i.브랜드]++;});SOV[kw]=kd;});
+    // 그룹별 SOV 사전 계산
+    Object.entries(KW_GROUPS).forEach(([grpKey, kws])=>{
+      const kd={};BRANDS.forEach(b=>kd[b]=0);
+      items.forEach(i=>{
+        const txt=i.제목+' '+i.내용요약;
+        if(kws.some(kw=>txt.includes(kw))&&kd[i.브랜드]!==undefined) kd[i.브랜드]++;
+      });
+      SOV[grpKey]=kd;
+    });
 
     // ── 핵심 키워드 — 주거 도메인 사전 기반 Top10 ──────
     const HOUSING_DICT={
