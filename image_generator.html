@@ -195,14 +195,7 @@
     font-size:19px;
     font-weight:800;
     line-height:1.32;
-    margin:0 0 4px;
-    word-break:keep-all;
-  }
-  .overlay-subline{
-    font-size:12.5px;
-    font-weight:400;
-    opacity:0.88;
-    line-height:1.4;
+    margin:0;
     word-break:keep-all;
   }
   .loading-bar{
@@ -518,16 +511,15 @@ document.getElementById('generateBtn').addEventListener('click', async ()=>{
     const systemPrompt = `당신은 자이(Xi) 아파트 브랜드의 인스타그램 콘텐츠 기획자입니다.
 카테고리: ${cat.tag}
 톤앤매너: ${cat.tone}
-브랜드 컬러: XI Deep Blue(#122d43), Xi Heritage Blue(#0085ad), Xi Sky Blue(#46a5e6), Xi Gray(#d8d4cd)
 반드시 아래 JSON 형식으로만 응답하세요. 다른 텍스트는 포함하지 마세요.
 {
-  "headline": "이미지에 오버레이될 짧고 임팩트 있는 헤드카피 (15자 내외)",
-  "subline": "헤드카피를 보완하는 서브카피 (20자 내외)",
+  "title_line1": "이미지에 오버레이될 제목의 첫 번째 줄 (10자 내외)",
+  "title_line2": "제목의 두 번째 줄 (10자 내외). title_line1과 이어 읽었을 때 하나의 문장이 되어야 하며, 글자 크기·굵기는 첫 줄과 완전히 동일하게 취급됨",
   "caption": "인스타그램 피드용 캡션 3~5문장",
   "hashtags": ["#해시태그1", "#해시태그2", "..."],
   "image_prompt": "${referenceImageData
-    ? '첨부된 실제 아파트 사진을 편집하는 영문 지시문. 카메라 각도, 구도, 건축물의 형태·비율은 절대 바꾸지 말 것을 명시. 오직 색감/톤(자이 딥블루 계열 무드로 보정)과 전체적인 분위기만 카테고리 톤에 맞게 조정하라고 지시할 것. 사진 안에 어떤 텍스트, 글자, 로고, 워터마크도 새로 추가하지 말라고 명시할 것.'
-    : '배경 이미지 생성을 위한 영문 프롬프트. 반드시 사진/일러스트 안에 어떤 텍스트, 글자, 로고, 워터마크도 넣지 말라고 명시할 것. 세로 4:5 비율, 자이 브랜드의 딥블루/화이트 톤 무드, 미니멀하고 프리미엄한 건축/공간 분위기를 묘사할 것.'
+    ? '첨부된 실제 아파트 사진을 편집하는 영문 지시문. 카메라 각도, 구도, 건축물의 형태·비율, 원본 색감과 조명은 그대로 유지하라고 명시할 것. 사진 전체에 새로운 색상 필터나 톤을 씌우지 말라고 명확히 지시할 것 (예: "do not apply any color tint or filter over the entire image, preserve the original photo colors exactly"). 사진 안에 텍스트, 글자, 로고, 워터마크를 추가하지 말라고 명시할 것.'
+    : '배경 이미지 생성을 위한 영문 프롬프트. 실제 아파트/건축 사진처럼 자연스러운 조명과 색감으로 묘사할 것 — 사진 전체를 인위적으로 하나의 색조(예: 전체 블루 필터)로 뒤덮지 말라고 명시할 것. 세로 4:5 비율, 미니멀하고 프리미엄한 건축/공간 분위기를 사실적인 사진 스타일로 묘사할 것. 사진/일러스트 안에 텍스트, 글자, 로고, 워터마크를 넣지 말라고 명시할 것.'
   }"
 }`;
     const userPrompt = `제목: ${title}\n내용: ${content}`;
@@ -567,8 +559,8 @@ document.getElementById('generateBtn').addEventListener('click', async ()=>{
     textWrap.className = 'overlay-text';
     textWrap.innerHTML = `
       <span class="overlay-eyebrow">${cat.tag}</span>
-      <div class="overlay-headline">${(result.headline||title)}</div>
-      <div class="overlay-subline">${result.subline||''}</div>
+      <div class="overlay-headline">${(result.title_line1||title)}</div>
+      <div class="overlay-headline">${result.title_line2||''}</div>
     `;
     frame.appendChild(textWrap);
 
