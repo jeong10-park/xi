@@ -180,15 +180,12 @@
     color:#fff;
   }
   .overlay-eyebrow{
-    display:inline-block;
-    font-size:10.5px;
+    display:block;
+    font-size:12px;
     font-weight:700;
-    letter-spacing:0.5px;
-    padding:3px 8px;
-    border-radius:3px;
-    background:var(--xi-sky);
-    color:var(--xi-deep);
-    margin-bottom:8px;
+    letter-spacing:0.3px;
+    color:#fff;
+    margin-bottom:6px;
   }
   .overlay-headline{
     font-size:19px;
@@ -206,12 +203,12 @@
   }
   .overlay-logo{
     position:absolute;
-    right:16px;
-    bottom:16px;
-    height:20px;
+    right:14px;
+    top:14px;
+    height:16px;
     width:auto;
     filter:brightness(0) invert(1);
-    opacity:0.95;
+    opacity:0.85;
   }
   .loading-bar{
     font-size:12px;
@@ -488,7 +485,7 @@ async function callWorkerText(systemPrompt, userPrompt){
   });
   const data = await res.json();
   if(!res.ok){
-    throw new Error(`텍스트 생성 오류 (${res.status}): ${data.error || JSON.stringify(data).slice(0,200)}`);
+    throw new Error(`텍스트 생성 오류 (${res.status}): ${typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || JSON.stringify(data).slice(0,200))}`);
   }
   const textPart = data.candidates?.[0]?.content?.parts?.find(p=>p.text)?.text;
   if(!textPart) throw new Error('텍스트 생성 결과를 읽을 수 없습니다.');
@@ -503,7 +500,7 @@ async function callWorkerImage(imagePrompt, referenceImage){
   });
   const data = await res.json();
   if(!res.ok){
-    throw new Error(`이미지 생성 오류 (${res.status}): ${data.error || JSON.stringify(data).slice(0,200)}`);
+    throw new Error(`이미지 생성 오류 (${res.status}): ${typeof data.error === 'object' ? JSON.stringify(data.error) : (data.error || JSON.stringify(data).slice(0,200))}`);
   }
   const imgPart = data.candidates?.[0]?.content?.parts?.find(p=>p.inlineData);
   if(!imgPart) throw new Error('이미지 생성 결과를 받지 못했습니다.');
