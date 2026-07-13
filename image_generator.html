@@ -472,7 +472,7 @@ document.getElementById('refImageRemove').addEventListener('click', ()=>{
   document.getElementById('refImagePreviewWrap').style.display = 'none';
 });
 
-document.querySelectorAll('.copy-btn').forEach(btn=>{
+document.querySelectorAll('.copy-btn[data-target]').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const el = document.getElementById(btn.dataset.target);
     try{
