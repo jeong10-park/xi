@@ -464,7 +464,9 @@ function clearError(){
 
 // Cloudflare Worker 프록시 주소 — API 키는 이 Worker 안에만 저장되어 있음
 // [검증 필요] Worker 이름이나 계정 서브도메인을 바꾸면 이 주소도 함께 수정할 것
-const WORKER_URL = 'https://xi-instagram-proxy.whatsupyeol.workers.dev';
+// [검증 필요] Vercel 프로젝트의 고정 프로덕션 도메인으로 확인되면 아래 주소를 교체할 것
+// (지금은 특정 배포 1회성 주소 — 재배포 시 바뀔 수 있음)
+const WORKER_URL = 'https://xi-ka7iv3ca9-xi8.vercel.app/api/generate';
 
 async function callWorkerText(systemPrompt, userPrompt){
   const res = await fetch(WORKER_URL, {
