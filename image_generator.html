@@ -317,7 +317,8 @@
         <div class="preview-empty" id="previewEmpty">카테고리와 내용을 입력하고<br>생성 버튼을 눌러주세요</div>
       </div>
     </div>
-    <div style="display:flex;justify-content:center;">
+    <div style="display:flex;justify-content:center;gap:8px;">
+      <button class="copy-btn" id="regenerateBtn" disabled style="padding:7px 16px;font-size:12.5px;">이미지 재생성</button>
       <button class="copy-btn" id="saveImageBtn" disabled style="padding:7px 16px;font-size:12.5px;">이미지 저장</button>
     </div>
 
@@ -525,6 +526,45 @@ async function callWorkerImage(imagePrompt, referenceImage){
   return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
 }
 
+let lastResult = null;
+let lastCat = null;
+let lastTitle = null;
+
+function renderPreview(imageUrl, cat, result, title){
+  const frame = document.getElementById('previewFrame');
+  frame.innerHTML = '';
+  if(imageUrl){
+    const img = document.createElement('img');
+    img.className = 'bg';
+    img.src = imageUrl;
+    frame.appendChild(img);
+  } else {
+    const empty = document.createElement('div');
+    empty.className = 'preview-empty';
+    empty.textContent = '이미지 생성 실패 — 문구만 확인하세요';
+    frame.appendChild(empty);
+  }
+  const grad = document.createElement('div');
+  grad.className = 'overlay-grad';
+  frame.appendChild(grad);
+
+  const gradTop = document.createElement('div');
+  gradTop.className = 'overlay-grad-top';
+  frame.appendChild(gradTop);
+
+  const textWrap = document.createElement('div');
+  textWrap.className = 'overlay-text';
+  textWrap.innerHTML = `
+    <span class="overlay-eyebrow">${cat.tag}</span>
+    <div class="overlay-headline">${(result.title_line1||title)}</div>
+    <div class="overlay-headline">${result.title_line2||''}</div>
+  `;
+  frame.appendChild(textWrap);
+
+  document.getElementById('saveImageBtn').disabled = !imageUrl;
+  document.getElementById('regenerateBtn').disabled = !result.image_prompt;
+}
+
 document.getElementById('generateBtn').addEventListener('click', async ()=>{
   clearError();
   const title = document.getElementById('postTitle').value.trim();
@@ -564,49 +604,38 @@ document.getElementById('generateBtn').addEventListener('click', async ()=>{
       showError('이미지 생성에 실패했지만 문구는 정상 생성되었습니다: ' + imgErr.message);
     }
 
-    // render preview
-    const frame = document.getElementById('previewFrame');
-    frame.innerHTML = '';
-    if(imageUrl){
-      const img = document.createElement('img');
-      img.className = 'bg';
-      img.src = imageUrl;
-      frame.appendChild(img);
-    } else {
-      const empty = document.createElement('div');
-      empty.className = 'preview-empty';
-      empty.textContent = '이미지 생성 실패 — 문구만 확인하세요';
-      frame.appendChild(empty);
-    }
-    const grad = document.createElement('div');
-    grad.className = 'overlay-grad';
-    frame.appendChild(grad);
-
-    const gradTop = document.createElement('div');
-    gradTop.className = 'overlay-grad-top';
-    frame.appendChild(gradTop);
-
-    const textWrap = document.createElement('div');
-    textWrap.className = 'overlay-text';
-    textWrap.innerHTML = `
-      <span class="overlay-eyebrow">${cat.tag}</span>
-      <div class="overlay-headline">${(result.title_line1||title)}</div>
-      <div class="overlay-headline">${result.title_line2||''}</div>
-    `;
-    frame.appendChild(textWrap);
+    renderPreview(imageUrl, cat, result, title);
 
     document.getElementById('captionOut').value = result.caption || '';
     const tags = (result.hashtags||[]).concat(cat.hashtagSeed);
     const uniqueTags = [...new Set(tags)];
     document.getElementById('hashtagOut').value = uniqueTags.join(' ');
 
-    const saveBtn = document.getElementById('saveImageBtn');
-    saveBtn.disabled = !imageUrl;
+    lastResult = result;
+    lastCat = cat;
+    lastTitle = title;
 
   }catch(err){
     showError(err.message);
   }finally{
     btn.disabled = false;
+    document.getElementById('loadingBar').textContent = '';
+  }
+});
+
+document.getElementById('regenerateBtn').addEventListener('click', async ()=>{
+  if(!lastResult || !lastResult.image_prompt){ return; }
+  clearError();
+  const regenBtn = document.getElementById('regenerateBtn');
+  regenBtn.disabled = true;
+  document.getElementById('loadingBar').textContent = '이미지 재생성 중... (최대 30초 소요될 수 있어요)';
+  try{
+    const imageUrl = await callWorkerImage(lastResult.image_prompt, referenceImageData);
+    renderPreview(imageUrl, lastCat, lastResult, lastTitle);
+  }catch(err){
+    showError('이미지 재생성에 실패했습니다: ' + err.message);
+  }finally{
+    regenBtn.disabled = false;
     document.getElementById('loadingBar').textContent = '';
   }
 });
