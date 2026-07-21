@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏗️ 자이 아파트 브랜드 버즈 모니터링</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0c0c10;--bg2:#13131a;--bg3:#1a1a24;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.14);
+  --text:#eeeef6;--text2:#9898b8;--text3:#55556a;
+  --xi:#2563EB;--xi2:#60a5fa;--xi3:rgba(37,99,235,0.12);
+  --pos:#4ecb8d;--neg:#e05c5c;--neu:#f0b442;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:15px;line-height:1.7}
+
+/* HEADER */
+.header{border-bottom:1px solid var(--border);padding:0 32px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(12,12,16,0.97);backdrop-filter:blur(16px);z-index:100;gap:12px;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-badge{background:var(--xi);color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;padding:3px 10px;border-radius:4px;font-family:'DM Mono',monospace}
+.logo-text{font-size:14px;font-weight:600;letter-spacing:-.02em}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.live-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-family:'DM Mono',monospace;padding:4px 11px;border-radius:20px;border:1px solid rgba(78,203,141,0.3);background:rgba(78,203,141,0.07);color:var(--pos);cursor:pointer}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--pos);animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.date-input{font-size:12px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);outline:none;color-scheme:dark}
+.date-input:focus{border-color:var(--xi)}
+.date-sep{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+.date-apply-btn{font-size:12px;padding:4px 11px;border-radius:7px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;font-family:'Noto Sans KR',sans-serif}
+.date-apply-btn:hover{border-color:var(--xi);color:var(--xi2)}
+.period-badge{font-size:11px;font-family:'DM Mono',monospace;padding:3px 9px;border-radius:20px;border:1px solid var(--border2);color:var(--text3);display:none}
+.period-badge.visible{display:inline-block;color:var(--xi2);border-color:rgba(37,99,235,0.3)}
+.last-update{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+
+/* LAYOUT */
+.container{max-width:1380px;margin:0 auto;padding:0 32px 80px}
+.page-header{padding:32px 0 20px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.page-title{font-size:24px;font-weight:700;letter-spacing:-.03em;margin-bottom:4px}
+.page-title .xi-text{color:var(--xi2);font-weight:800}
+.page-sub{font-size:13px;color:var(--text2)}
+.section-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-label .tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);border:1px solid var(--border2);padding:1px 7px;border-radius:10px}
+
+/* BRAND FILTER */
+.brand-filter{display:flex;align-items:center;gap:7px;margin-bottom:32px;flex-wrap:wrap}
+.bf-label{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.08em}
+.bf-tag{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .15s;background:transparent;font-family:'Noto Sans KR',sans-serif;display:flex;align-items:center;gap:5px}
+.bf-tag .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.bf-tag.active{background:rgba(255,255,255,0.04);border-color:var(--border2);color:var(--text)}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px}
+.card-title{font-size:11px;color:var(--text3);margin-bottom:16px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:.07em}
+.xi-card{border-color:rgba(37,99,235,0.3)!important;background:linear-gradient(145deg,rgba(37,99,235,0.05),var(--bg2))!important}
+.divider{border-top:1px solid var(--border)}
+
+/* SOV */
+.sov-section{margin-bottom:44px}
+.sov-grid{display:grid;grid-template-columns:260px 1fr;gap:14px}
+.donut-wrap{position:relative;width:150px;height:150px;margin:0 auto 18px}
+.donut-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-total{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;color:var(--xi2)}
+.donut-unit{font-size:10px;color:var(--text3);margin-top:1px;font-family:'DM Mono',monospace}
+.legend{display:flex;flex-direction:column;gap:6px}
+.legend-item{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.legend-left{display:flex;align-items:center;gap:7px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-name{color:var(--text2)}
+.legend-pct{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);font-weight:500}
+.sov-right{display:flex;flex-direction:column;gap:14px}
+.sov-right-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px}
+.area-wrap{position:relative;height:190px}
+.area-legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.area-leg-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.area-leg-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.kw-bar-wrap{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.kw-btn{font-size:11px;padding:3px 10px;border-radius:16px;border:1px solid var(--border2);color:var(--text3);cursor:pointer;background:transparent;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.kw-btn.active{border-color:var(--xi);color:var(--xi2);background:var(--xi3)}
+.brand-kw-list{display:flex;flex-direction:column;gap:8px}
+.brand-kw-item{display:flex;align-items:flex-start;gap:10px}
+.brand-kw-name{font-size:11px;color:var(--text2);min-width:68px;padding-top:2px;flex-shrink:0}
+.brand-kw-chips{display:flex;gap:4px;flex-wrap:wrap}
+.brand-chip{font-size:10px;padding:2px 7px;border-radius:8px;border:1px solid var(--border2);color:var(--text3);font-family:'DM Mono',monospace}
+.brand-chip.xi{border-color:rgba(37,99,235,0.5);color:var(--xi2);background:rgba(37,99,235,0.08)}
+
+/* SENTIMENT */
+.sent-section{margin-bottom:44px}
+.sent-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.sent-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.sent-card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px}
+.sent-donut-wrap{position:relative;width:80px;height:80px;margin:0 auto 12px}
+.sent-donut-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.sent-donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:'DM Mono',monospace}
+.sent-legend{display:flex;flex-direction:column;gap:5px}
+.sent-legend-item{display:flex;justify-content:space-between;font-size:11px}
+
+/* HEALTH */
+.health-section{margin-bottom:44px}
+.health-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.health-card{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:15px;transition:border-color .15s}
+.health-card:hover{border-color:var(--border2)}
+.health-brand{font-size:12px;font-weight:600;margin-bottom:11px;display:flex;align-items:center;gap:6px}
+.health-score-total{font-size:26px;font-weight:700;font-family:'DM Mono',monospace;margin-bottom:1px;line-height:1}
+.health-score-label{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:11px}
+.factor-list{display:flex;flex-direction:column;gap:7px}
+.factor-item{display:flex;flex-direction:column;gap:3px}
+.factor-top{display:flex;justify-content:space-between;align-items:center}
+.factor-name{font-size:10px;color:var(--text2)}
+.factor-val{font-size:10px;font-family:'DM Mono',monospace;color:var(--text)}
+.factor-bar{height:3px;background:rgba(255,255,255,0.06);border-radius:2px}
+.factor-fill{height:100%;border-radius:2px;transition:width .6s ease}
+
+/* BUZZ */
+.buzz-section{margin-bottom:44px}
+.buzz-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.buzz-card{background:var(--bg2);border:1px solid var(--border);border-radius:13px;padding:15px}
+.buzz-brand{font-size:12px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.buzz-count{font-size:24px;font-weight:700;font-family:'DM Mono',monospace;margin-bottom:10px;line-height:1}
+.buzz-sent-row{display:flex;gap:7px;flex-wrap:wrap}
+.buzz-sent-item{font-size:10px;color:var(--text2)}
+.buzz-sent-item span{font-family:'DM Mono',monospace;color:var(--text)}
+.buzz-bar-stack{height:3px;border-radius:2px;display:flex;overflow:hidden;margin-top:9px;gap:1px}
+.bstack-pos{background:var(--pos)}.bstack-neg{background:var(--neg)}.bstack-neu{background:var(--neu)}
+
+/* HOT + FEED */
+.hot-section{margin-bottom:44px}
+.hot-list{display:flex;flex-direction:column;gap:8px}
+.hot-item{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:13px 18px;display:flex;align-items:center;gap:14px;transition:border-color .15s}
+.hot-item:hover{border-color:var(--border2)}
+.hot-item.hidden{display:none}
+.hot-brand-tag{font-size:12px;font-weight:700;min-width:68px;flex-shrink:0}
+.hot-title{font-size:13px;color:var(--text);flex:1;line-height:1.45}
+.hot-meta{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.hot-ch{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+.issue-section{margin-bottom:44px}
+.issue-topic-filter{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.topic-btn{font-size:12px;padding:4px 12px;border-radius:16px;border:1px solid var(--border2);color:var(--text2);cursor:pointer;background:transparent;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.topic-btn.active{background:var(--xi3);border-color:var(--xi);color:var(--xi2)}
+.feed-filter{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.filter-btn{font-size:12px;padding:4px 12px;border-radius:16px;border:1px solid var(--border2);color:var(--text2);cursor:pointer;background:transparent;font-family:'Noto Sans KR',sans-serif;transition:all .15s}
+.filter-btn.active{background:var(--xi3);border-color:var(--xi);color:var(--xi2)}
+.feed-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.feed-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:15px;display:flex;flex-direction:column;gap:8px;transition:border-color .15s}
+.feed-card:hover{border-color:var(--border2)}
+.feed-card.hidden{display:none}
+.feed-top{display:flex;justify-content:space-between;align-items:center}
+.feed-brand{font-size:12px;font-weight:700}
+.feed-time{font-size:10px;color:var(--text3);font-family:'DM Mono',monospace}
+.feed-title{font-size:13px;color:var(--text);line-height:1.55}
+.feed-summary{font-size:11px;color:var(--text3);line-height:1.5}
+.feed-bottom{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:auto}
+.feed-ch{font-size:10px;color:var(--text3)}
+.feed-link{font-size:10px;color:var(--xi2);text-decoration:none;margin-left:auto}
+.sent-badge{font-size:10px;padding:2px 8px;border-radius:8px;font-weight:500}
+.s-pos{background:rgba(78,203,141,0.1);color:var(--pos)}
+.s-neg{background:rgba(224,92,92,0.1);color:var(--neg)}
+.s-neu{background:rgba(240,180,66,0.1);color:var(--neu)}
+.topic-badge{font-size:10px;padding:2px 7px;border-radius:6px;border:1px solid var(--border2);color:var(--text3);font-family:'DM Mono',monospace}
+
+.footer{border-top:1px solid var(--border);padding:18px 32px;display:flex;justify-content:space-between;font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;flex-wrap:wrap;gap:6px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.sov-section{animation:fadeUp .4s ease both .05s}
+.sent-section{animation:fadeUp .4s ease both .1s}
+.health-section{animation:fadeUp .4s ease both .15s}
+.buzz-section{animation:fadeUp .4s ease both .2s}
+.hot-section{animation:fadeUp .4s ease both .25s}
+.issue-section{animation:fadeUp .4s ease both .3s}
+
+@media(max-width:1200px){.health-grid{grid-template-columns:repeat(4,1fr)}.buzz-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:1100px){.sov-grid{grid-template-columns:1fr}.health-grid{grid-template-columns:repeat(3,1fr)}.buzz-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.sent-grid{grid-template-columns:repeat(2,1fr)}.feed-grid{grid-template-columns:repeat(2,1fr)}.health-grid{grid-template-columns:repeat(2,1fr)}.buzz-grid{grid-template-columns:repeat(2,1fr)}.container{padding:0 16px 60px}.header{padding:0 16px}}
+@media(max-width:600px){.feed-grid{grid-template-columns:1fr}.health-grid{grid-template-columns:1fr}.buzz-grid{grid-template-columns:1fr}.sent-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <span class="logo-badge">XI</span>
+    <span class="logo-text">아파트 브랜드 버즈 모니터링</span>
+  </div>
+  <div class="header-right">
+    <button class="live-btn" id="liveBtn" onclick="toggleLive()">
+      <span class="live-dot" id="liveDot"></span>LIVE
+    </button>
+    <input type="date" class="date-input" id="dateFrom">
+    <span class="date-sep">~</span>
+    <input type="date" class="date-input" id="dateTo">
+    <button class="date-apply-btn" onclick="applyDateRange()">조회</button>
+    <span class="period-badge" id="periodBadge"></span>
+    <span class="last-update" id="updateTime"></span>
+  </div>
+</header>
+
+<div class="container">
+  <div class="page-header">
+    <div class="page-title">🏗️ <span class="xi-text">GS건설 자이</span> 브랜드 버즈 모니터링</div>
+    <div class="page-sub">10개 주요 아파트 브랜드 온라인 버즈 점유율 · 감성 · 이슈 분석 — Sheets 실시간 연동</div>
+  </div>
+
+  <div class="brand-filter" id="brandFilter"></div>
+
+  <!-- 01 SOV -->
+  <div class="sov-section">
+    <div class="section-label">📊 온라인 버즈 점유율 (SOV) <span class="tag">01</span></div>
+    <div class="sov-grid">
+      <div class="card">
+        <div class="card-title">전체 버즈 SOV</div>
+        <div class="donut-wrap">
+          <svg viewBox="0 0 100 100" id="mainDonutSvg"></svg>
+          <div class="donut-center">
+            <div class="donut-total" id="donutTotal">-</div>
+            <div class="donut-unit">건</div>
+          </div>
+        </div>
+        <div class="legend" id="mainLegend"></div>
+      </div>
+      <div class="sov-right">
+        <div class="sov-right-card">
+          <div class="card-title">주차별 SOV 추이</div>
+          <div class="area-wrap"><canvas id="areaChart"></canvas></div>
+          <div class="area-legend" id="areaLegend"></div>
+        </div>
+        <div class="sov-right-card">
+          <div class="card-title" style="margin-bottom:10px">연관 키워드 SOV</div>
+          <div class="kw-bar-wrap">
+            <button class="kw-btn active" onclick="selectKw(this,'all')">전체</button>
+            <button class="kw-btn" onclick="selectKw(this,'하자')">하자</button>
+            <button class="kw-btn" onclick="selectKw(this,'청약')">청약</button>
+            <button class="kw-btn" onclick="selectKw(this,'분양')">분양</button>
+            <button class="kw-btn" onclick="selectKw(this,'커뮤니티')">커뮤니티</button>
+            <button class="kw-btn" onclick="selectKw(this,'시세')">시세</button>
+            <button class="kw-btn" onclick="selectKw(this,'층간소음')">층간소음</button>
+            <button class="kw-btn" onclick="selectKw(this,'입주')">입주</button>
+            <button class="kw-btn" onclick="selectKw(this,'재건축')">재건축</button>
+            <button class="kw-btn" onclick="selectKw(this,'스마트홈')">스마트홈</button>
+          </div>
+          <div id="kwSovChart"></div>
+          <div class="divider" style="margin:16px 0"></div>
+          <div class="card-title" style="margin-bottom:10px">브랜드별 핵심 키워드</div>
+          <div class="brand-kw-list" id="brandKwList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 02 SENTIMENT -->
+  <div class="sent-section">
+    <div class="section-label">🎭 감성별 버즈 점유율 <span class="tag">02</span></div>
+    <div class="sent-grid">
+      <div class="sent-card"><div class="sent-card-title">📊 전체 SOV</div><div class="sent-donut-wrap"><svg viewBox="0 0 80 80" id="sd0"></svg><div class="sent-donut-center" style="color:var(--text)">전체</div></div><div class="sent-legend" id="sl0"></div></div>
+      <div class="sent-card"><div class="sent-card-title">🟢 긍정 SOV</div><div class="sent-donut-wrap"><svg viewBox="0 0 80 80" id="sd1"></svg><div class="sent-donut-center" style="color:var(--pos)">긍정</div></div><div class="sent-legend" id="sl1"></div></div>
+      <div class="sent-card"><div class="sent-card-title">🔴 부정 SOV</div><div class="sent-donut-wrap"><svg viewBox="0 0 80 80" id="sd2"></svg><div class="sent-donut-center" style="color:var(--neg)">부정</div></div><div class="sent-legend" id="sl2"></div></div>
+      <div class="sent-card"><div class="sent-card-title">🟡 중립 SOV</div><div class="sent-donut-wrap"><svg viewBox="0 0 80 80" id="sd3"></svg><div class="sent-donut-center" style="color:var(--neu)">중립</div></div><div class="sent-legend" id="sl3"></div></div>
+    </div>
+  </div>
+
+  <!-- 03 HEALTH -->
+  <div class="health-section">
+    <div class="section-label">🏆 브랜드 경쟁력 스코어 <span class="tag">03</span>
+      <span style="font-size:11px;color:var(--text3);font-weight:400;margin-left:4px">버즈 데이터 기반 자동 산출 · 5개 요소</span>
+    </div>
+    <div class="health-grid" id="healthGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">📡 데이터 불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- 04 BUZZ -->
+  <div class="buzz-section">
+    <div class="section-label">📣 브랜드별 버즈량 <span class="tag">04</span></div>
+    <div class="buzz-grid" id="buzzGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text3);font-size:13px">📡 데이터 불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- 05 HOT -->
+  <div class="hot-section">
+    <div class="section-label">🔥 브랜드별 최신 이슈 <span class="tag">05</span></div>
+    <div class="hot-list" id="hotList">
+      <div style="padding:20px;color:var(--text3);font-size:13px">📡 데이터 불러오는 중...</div>
+    </div>
+  </div>
+
+  <!-- 06 FEED -->
+  <div class="issue-section">
+    <div class="section-label">📋 전체 이슈 피드 <span class="tag">06</span></div>
+    <div class="issue-topic-filter">
+      <button class="topic-btn active" onclick="filterTopic('all',this)">전체 토픽</button>
+      <button class="topic-btn" onclick="filterTopic('시공품질',this)">🔨 시공·품질</button>
+      <button class="topic-btn" onclick="filterTopic('투자',this)">💰 투자·분양</button>
+      <button class="topic-btn" onclick="filterTopic('거주',this)">🏠 거주환경</button>
+      <button class="topic-btn" onclick="filterTopic('브랜드',this)">🏆 브랜드·PR</button>
+      <button class="topic-btn" onclick="filterTopic('민원',this)">⚠️ 민원·이슈</button>
+    </div>
+    <div class="feed-filter">
+      <button class="filter-btn active" onclick="filterSent('all',this)">전체 감성</button>
+      <button class="filter-btn" onclick="filterSent('pos',this)">🟢 긍정</button>
+      <button class="filter-btn" onclick="filterSent('neg',this)">🔴 부정</button>
+      <button class="filter-btn" onclick="filterSent('neu',this)">🟡 중립</button>
+      <button class="filter-btn" onclick="filterSent('xi',this)">✦ 자이만</button>
+      <button class="filter-btn" onclick="filterSent('premium',this)">💎 하이엔드</button>
+    </div>
+    <div class="feed-grid" id="feedGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">📡 Google Sheets에서 데이터를 불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <span>🏗️ GS자이 아파트 브랜드 버즈 모니터링</span>
+  <span>수집채널: 네이버 뉴스/블로그/카페/웹문서 · 카카오 웹/블로그/카페/뉴스</span>
+</footer>
+
+<script>
+// ── 브랜드 컬러 (10개) ────────────────────────────────
+// 자이: 브라이트 블루 (주인공, 가장 눈에 띄게)
+// 힐스테이트: 이미지 레드
+// 롯데캐슬: 다크버건디 (힐스테이트와 차별화)
+// 래미안: 삼성 네이비
+// 아이파크: 브라이트레드 (힐스테이트보다 선명)
+// 위브: 퍼플 (자이 블루와 충돌 방지)
+// 푸르지오: 이미지 그린
+// 이편한세상: DL 오렌지
+// 더샵: 미디엄블루 (자이보다 연하게)
+// SK뷰: 딥크림슨 (SK 레드 계열)
+const BC = {
+  '자이':      '#2563EB',
+  '힐스테이트':'#C8102E',
+  '롯데캐슬':  '#8B1A1A',
+  '래미안':    '#1B3A6B',
+  '아이파크':  '#E8112D',
+  '위브':      '#6B3FA0',
+  '푸르지오':  '#00843D',
+  '이편한세상':'#F47920',
+  '더샵':      '#2D7DD2',
+  'SK뷰':      '#BF0A30',
+};
+const BRANDS = ['자이','힐스테이트','롯데캐슬','래미안','아이파크','위브','푸르지오','이편한세상','더샵','SK뷰'];
+
+const SHEETS_ID   = '1CSjDf8z-XFSP3Fbk87hpCSY1WrQ3r55ff6cMP4RTfvM';
+const SHEETS_BASE = `https://docs.google.com/spreadsheets/d/${SHEETS_ID}/gviz/tq?tqx=out:json&sheet=피드`;
+const DATA_FROM   = '2025-01-01';
+
+// 토픽 분류 키워드
+const TOPIC_KW = {
+  '시공품질':['하자','결함','균열','누수','곰팡이','결로','층간소음','부실','마감','시공','AS','하자보수'],
+  '투자':   ['청약','분양','시세','프리미엄','상승','투자','재건축','재개발','입주권','분양가','당첨'],
+  '거주':   ['커뮤니티','조용','쾌적','경관','편의시설','주차','관리비','학군','녹지','스마트홈','입주민'],
+  '브랜드': ['브랜드','광고','마케팅','인지도','선호','이미지','리뉴얼','신규','론칭'],
+  '민원':   ['민원','소송','분쟁','고소','국토부','감리','피해','항의','집단'],
+};
+function classifyTopic(title,summary){ const t=title+' '+summary; for(const [tp,kws] of Object.entries(TOPIC_KW)){ if(kws.some(kw=>t.includes(kw))) return tp; } return '기타'; }
+
+// 상태
+let activeBrands=new Set(BRANDS),currentKw='all',curSentFilter='all',curTopicFilter='all';
+let isLive=true,areaChartInst=null,activeWeekRange=null,allItems=[];
+const SOV={all:{}},SENT={all:{},pos:{},neg:{},neu:{}};
+BRANDS.forEach(b=>{SOV.all[b]=0;SENT.all[b]=0;SENT.pos[b]=0;SENT.neg[b]=0;SENT.neu[b]=0;});
+
+// 주차 계산
+function getMonday(d){const day=d.getDay(),diff=d.getDate()-(day===0?6:day-1),m=new Date(d);m.setDate(diff);m.setHours(0,0,0,0);return m;}
+function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+const startMon=getMonday(new Date(DATA_FROM)),thisMon=getMonday(new Date());
+const WEEKLY_DATES=[];
+for(let d=new Date(startMon);d<=thisMon;d.setDate(d.getDate()+7)) WEEKLY_DATES.push(fmt(new Date(d)));
+const TOTAL=WEEKLY_DATES.length;
+const WEEKLY_LABELS=WEEKLY_DATES.map((_,i)=>{const diff=TOTAL-1-i;return diff===0?'W':`W-${diff}`;});
+const WEEKLY_SOV={};
+BRANDS.forEach(b=>WEEKLY_SOV[b]=Array(TOTAL).fill(0));
+
+function updateTime(){const n=new Date();document.getElementById('updateTime').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')+' 갱신';}
+updateTime();setInterval(updateTime,60000);
+
+// 브랜드 필터
+function renderBrandFilter(){
+  const el=document.getElementById('brandFilter');
+  el.innerHTML='<span class="bf-label">브랜드</span>';
+  BRANDS.forEach(b=>{
+    const isXi=b==='자이';
+    const tag=document.createElement('button');
+    tag.className='bf-tag active';
+    tag.dataset.brand=b;
+    tag.style.cssText=isXi?`border-color:rgba(37,99,235,0.4);font-weight:700`:'';
+    tag.innerHTML=`<span class="dot" style="background:${BC[b]}"></span>${b}${isXi?' ✦':''}`;
+    tag.onclick=()=>{tag.classList.toggle('active');activeBrands.has(b)?activeBrands.delete(b):activeBrands.add(b);applyAll();};
+    el.appendChild(tag);
+  });
+}
+
+function applyAll(){
+  renderMainDonut();renderKwSov(currentKw);renderSentAll();renderAreaChart();
+  document.querySelectorAll('#hotList .hot-item').forEach(el=>el.classList.toggle('hidden',!activeBrands.has(el.dataset.brand)));
+  applyFeedFilter();
+}
+
+function toggleLive(){
+  isLive=!isLive;
+  const dot=document.getElementById('liveDot');
+  if(isLive){dot.style.animation='blink 1.8s infinite';document.getElementById('periodBadge').classList.remove('visible');document.getElementById('dateFrom').value='';document.getElementById('dateTo').value='';activeWeekRange=null;renderAreaChart();}
+  else{dot.style.animation='none';dot.style.opacity='.3';}
+}
+function dateToWeekIdx(s){const d=new Date(s);for(let i=0;i<WEEKLY_DATES.length-1;i++){if(d>=new Date(WEEKLY_DATES[i])&&d<new Date(WEEKLY_DATES[i+1]))return i;}return WEEKLY_DATES.length-1;}
+function applyDateRange(){
+  const f=document.getElementById('dateFrom').value,t=document.getElementById('dateTo').value;
+  if(!f||!t){alert('시작일과 종료일을 모두 입력해주세요.');return;}
+  if(f>t){alert('시작일이 종료일보다 늦을 수 없어요.');return;}
+  if(isLive)toggleLive();
+  const si=dateToWeekIdx(f),ei=dateToWeekIdx(t);
+  activeWeekRange=[Math.min(si,ei),Math.max(si,ei)];
+  const badge=document.getElementById('periodBadge');
+  badge.textContent=WEEKLY_LABELS[activeWeekRange[0]]+' ~ '+WEEKLY_LABELS[activeWeekRange[1]];
+  badge.classList.add('visible');renderAreaChart();
+}
+
+// 도넛 헬퍼
+function mkDonut(svgId,cx,cy,r,data){
+  const filtered=Object.fromEntries(Object.entries(data).filter(([b])=>activeBrands.has(b)));
+  const total=Object.values(filtered).reduce((a,b)=>a+b,0)||1;
+  const C=2*Math.PI*r;let offset=0;
+  const svg=document.getElementById(svgId);svg.innerHTML='';
+  Object.entries(filtered).sort((a,b)=>b[1]-a[1]).forEach(([brand,raw])=>{
+    const isXi=brand==='자이';
+    const dash=(raw/total)*C,gap=C-dash;
+    const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);
+    c.setAttribute('fill','none');c.setAttribute('stroke',BC[brand]||'#888');
+    c.setAttribute('stroke-width',isXi?(r>30?'16':'13'):(r>30?'12':'9'));
+    c.setAttribute('stroke-dasharray',`${dash} ${gap}`);
+    c.setAttribute('stroke-dashoffset',String(-offset));
+    svg.appendChild(c);offset+=dash;
+  });
+  return filtered;
+}
+
+function renderMainDonut(){
+  const filtered=mkDonut('mainDonutSvg','50','50',37,SOV.all);
+  const total=Object.values(filtered).reduce((a,b)=>a+b,0)||0;
+  document.getElementById('donutTotal').textContent=total.toLocaleString();
+  const leg=document.getElementById('mainLegend');leg.innerHTML='';
+  Object.entries(filtered).sort((a,b)=>b[1]-a[1]).forEach(([brand,raw])=>{
+    const pct=Math.round(raw/total*100)||0,isXi=brand==='자이';
+    leg.innerHTML+=`<div class="legend-item">
+      <div class="legend-left"><div class="legend-dot" style="background:${BC[brand]};${isXi?'width:10px;height:10px':''}"></div>
+      <span class="legend-name" style="${isXi?'color:#60a5fa;font-weight:700':''}">${brand}${isXi?' ✦':''}</span></div>
+      <span class="legend-pct" style="${isXi?'color:#60a5fa;font-weight:700':''}">${pct}%</span>
+    </div>`;
+  });
+}
+
+function renderKwSov(key){
+  currentKw=key;
+  const data=SOV[key]||SOV.all;
+  const filtered=Object.fromEntries(Object.entries(data).filter(([b])=>activeBrands.has(b)));
+  const total=Object.values(filtered).reduce((a,b)=>a+b,0)||1;
+  const c=document.getElementById('kwSovChart');c.innerHTML='';
+  Object.entries(filtered).sort((a,b)=>b[1]-a[1]).forEach(([brand,raw])=>{
+    const pct=Math.round(raw/total*100),isXi=brand==='자이';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:7px';
+    row.innerHTML=`<span style="font-size:11px;${isXi?'color:#60a5fa;font-weight:700':'color:var(--text2)'};min-width:68px">${brand}${isXi?' ✦':''}</span>
+      <div style="flex:1;height:${isXi?5:4}px;background:rgba(255,255,255,0.05);border-radius:2px">
+        <div style="height:100%;width:${pct}%;background:${BC[brand]};border-radius:2px"></div></div>
+      <span style="font-size:11px;font-family:'DM Mono',monospace;${isXi?'color:#60a5fa;font-weight:700':'color:var(--text2)'};min-width:30px;text-align:right">${pct}%</span>`;
+    c.appendChild(row);
+  });
+}
+
+function selectKw(el,key){
+  document.querySelectorAll('.kw-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  if(key!=='all'){const kd={};BRANDS.forEach(b=>kd[b]=0);allItems.forEach(i=>{if((i.제목+' '+i.내용요약).includes(key)&&kd[i.브랜드]!==undefined)kd[i.브랜드]++;});SOV[key]=kd;}
+  renderKwSov(key);
+}
+
+function renderSentDonut(svgId,legId,sentKey){
+  const filtered=mkDonut(svgId,'40','40',27,SENT[sentKey]);
+  const total=Object.values(filtered).reduce((a,b)=>a+b,0)||1;
+  const leg=document.getElementById(legId);leg.innerHTML='';
+  Object.entries(filtered).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(([brand,raw])=>{
+    const pct=Math.round(raw/total*100),isXi=brand==='자이';
+    leg.innerHTML+=`<div class="sent-legend-item">
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:6px;height:6px;border-radius:50%;background:${BC[brand]};flex-shrink:0"></div>
+        <span style="color:var(--text2);${isXi?'color:#60a5fa;font-weight:700':''}">${brand}</span>
+      </div>
+      <span style="font-family:'DM Mono',monospace;color:var(--text);${isXi?'color:#60a5fa;font-weight:700':''}">${pct}%</span>
+    </div>`;
+  });
+}
+function renderSentAll(){['sd0','sd1','sd2','sd3'].forEach((id,i)=>renderSentDonut(id,'sl'+i,['all','pos','neg','neu'][i]));}
+
+function renderAreaChart(){
+  const si=activeWeekRange?activeWeekRange[0]:0,ei=activeWeekRange?activeWeekRange[1]:TOTAL-1;
+  const sl=WEEKLY_LABELS.slice(si,ei+1),sd=WEEKLY_DATES.slice(si,ei+1);
+  const abl=BRANDS.filter(b=>activeBrands.has(b));
+  const rd={};abl.forEach(b=>rd[b]=WEEKLY_SOV[b].slice(si,ei+1));
+  const tots=sl.map((_,i)=>abl.reduce((s,b)=>s+(rd[b][i]||0),0));
+  const pd={};abl.forEach(b=>pd[b]=rd[b].map((v,i)=>tots[i]?Math.round(v/tots[i]*100):0));
+  const sb=[...abl].sort((a,b)=>(pd[b][sl.length-1]||0)-(pd[a][sl.length-1]||0));
+  const datasets=sb.map(b=>{const isXi=b==='자이';return{label:b,data:pd[b],backgroundColor:BC[b]+'22',borderColor:BC[b],borderWidth:isXi?3:1,fill:true,tension:0.35,pointRadius:isXi?4:2,pointBackgroundColor:BC[b]};});
+  if(areaChartInst){areaChartInst.destroy();areaChartInst=null;}
+  const ctx=document.getElementById('areaChart').getContext('2d');
+  areaChartInst=new Chart(ctx,{type:'line',data:{labels:sl.map((w,i)=>w+'\n'+sd[i].slice(5)),datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    scales:{x:{stacked:true,grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#55556a',font:{size:10,family:"'DM Mono',monospace"},maxRotation:0}},y:{stacked:true,min:0,max:100,grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#55556a',font:{size:10,family:"'DM Mono',monospace"},callback:v=>v+'%'}}},
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(19,19,26,0.97)',titleColor:'#eeeef6',bodyColor:'#9898b8',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y}%`}}}}});
+  const legEl=document.getElementById('areaLegend');legEl.innerHTML='';
+  sb.forEach(b=>{const isXi=b==='자이';legEl.innerHTML+=`<div class="area-leg-item"><div class="area-leg-dot" style="background:${BC[b]};${isXi?'width:9px;height:9px':''}"></div><span style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span></div>`;});
+}
+
+// 브랜드 헬스 스코어
+const FKW={
+  시공부정:['하자','결함','균열','누수','곰팡이','결로','층간소음','부실'],
+  투자긍정:['청약','시세차익','상승','당첨','재건축','재개발','프리미엄 붙','분양 완판'],
+  투자부정:['미분양','입주 지연','PF','공사 중단'],
+  거주긍정:['쾌적','조용','커뮤니티 좋','경관 좋','편의시설','학군','녹지'],
+  거주부정:['주차 부족','관리비 비싸','시끄럽','층간소음','좁아'],
+  스마트:  ['스마트홈','IoT','친환경','에너지','공기질','스마트 케어'],
+};
+function calcHealthScores(items){
+  const scores={};
+  BRANDS.forEach(b=>{
+    const bi=items.filter(i=>i.브랜드===b),total=bi.length||1;
+    const pos=bi.filter(i=>i.감성==='긍정').length;
+    const totalAll=items.length||1;
+    const brandPower=Math.min(100,Math.round((pos/total)*100*0.6+(total/totalAll)*100*0.4*3));
+    const constNeg=bi.filter(i=>FKW.시공부정.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
+    const constScore=Math.max(0,Math.round(100-(constNeg/total)*300));
+    const invPos=bi.filter(i=>FKW.투자긍정.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
+    const invNeg=bi.filter(i=>FKW.투자부정.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
+    const invScore=Math.min(100,Math.max(0,Math.round(50+(invPos-invNeg)/total*200)));
+    const livPos=bi.filter(i=>FKW.거주긍정.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
+    const livNeg=bi.filter(i=>FKW.거주부정.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
+    const livScore=Math.min(100,Math.max(0,Math.round(50+(livPos-livNeg)/total*200)));
+    const smartCnt=bi.filter(i=>FKW.스마트.some(kw=>(i.제목+i.내용요약).includes(kw))).length;
+    const smartScore=Math.min(100,Math.round(30+(smartCnt/total)*700));
+    scores[b]={total:Math.round((brandPower+constScore+invScore+livScore+smartScore)/5),factors:[
+      {name:'브랜드 파워',val:brandPower,icon:'🏆'},
+      {name:'시공·품질', val:constScore,icon:'🔨'},
+      {name:'투자 가치', val:invScore,  icon:'💰'},
+      {name:'주거 환경', val:livScore,  icon:'🌿'},
+      {name:'스마트·친환경',val:smartScore,icon:'🤖'},
+    ]};
+  });
+  return scores;
+}
+
+function renderHealthGrid(scores){
+  const grid=document.getElementById('healthGrid');grid.innerHTML='';
+  [...BRANDS].filter(b=>activeBrands.has(b)).sort((x,y)=>scores[y].total-scores[x].total).forEach(b=>{
+    const s=scores[b],isXi=b==='자이';
+    const card=document.createElement('div');
+    card.className='health-card'+(isXi?' xi-card':'');
+    card.innerHTML=`
+      <div class="health-brand">
+        <span style="display:inline-block;width:${isXi?9:7}px;height:${isXi?9:7}px;border-radius:50%;background:${BC[b]};flex-shrink:0"></span>
+        <span style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span>
+      </div>
+      <div class="health-score-total" style="color:${isXi?'#60a5fa':BC[b]}">${s.total}</div>
+      <div class="health-score-label">/ 100점</div>
+      <div class="factor-list">${s.factors.map(f=>`
+        <div class="factor-item">
+          <div class="factor-top"><span class="factor-name">${f.icon} ${f.name}</span><span class="factor-val">${f.val}</span></div>
+          <div class="factor-bar"><div class="factor-fill" style="width:${f.val}%;background:${BC[b]}"></div></div>
+        </div>`).join('')}</div>`;
+    grid.appendChild(card);
+  });
+}
+
+function filterSent(type,el){curSentFilter=type;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');applyFeedFilter();}
+function filterTopic(type,el){curTopicFilter=type;document.querySelectorAll('.topic-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');applyFeedFilter();}
+function applyFeedFilter(){
+  document.querySelectorAll('#feedGrid .feed-card').forEach(card=>{
+    const bOk=activeBrands.has(card.dataset.brand);
+    let sOk=true,tOk=true;
+    if(curSentFilter==='xi') sOk=card.dataset.brand==='자이';
+    else if(curSentFilter==='premium') sOk=card.dataset.premium==='Y';
+    else if(curSentFilter!=='all') sOk=card.dataset.sent===curSentFilter;
+    if(curTopicFilter!=='all') tOk=card.dataset.topic===curTopicFilter;
+    card.classList.toggle('hidden',!bOk||!sOk||!tOk);
+  });
+}
+
+function timeAgo(s){if(!s)return'';const d=new Date(s);if(isNaN(d))return s;const diff=Math.floor((Date.now()-d)/1000/60);if(diff<60)return diff+'분 전';if(diff<1440)return Math.floor(diff/60)+'시간 전';if(diff<10080)return Math.floor(diff/1440)+'일 전';return s.slice(0,10);}
+
+async function loadFromSheets(){
+  try{
+    const res=await fetch(SHEETS_BASE);
+    const text=await res.text();
+    const json=JSON.parse(text.replace(/^.*?({.*}).*$/s,'$1'));
+    const allRows=json.table?.rows||[];
+    if(!allRows.length){
+      document.getElementById('feedGrid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">수집된 데이터가 없어요. collector.py를 실행해주세요.</div>';
+      return;
+    }
+
+    const items=allRows.map(r=>{const c=r.c;return{
+      수집일시:c[0]?.v||'',작성일:c[1]?.v||'',채널:c[2]?.v||'',브랜드:c[3]?.v||'',
+      제목:c[4]?.v||'',내용요약:c[5]?.v||'',감성:c[6]?.v||'중립',
+      원문URL:c[7]?.v||'',댓글수:c[8]?.v||'',프리미엄:c[9]?.v||'',
+    };}).filter(i=>i.제목&&(!i.작성일||i.작성일>=DATA_FROM)&&BRANDS.includes(i.브랜드));
+    allItems=items;
+
+    // SOV
+    BRANDS.forEach(b=>SOV.all[b]=0);
+    items.forEach(i=>{if(SOV.all[i.브랜드]!==undefined)SOV.all[i.브랜드]++;});
+    BRANDS.forEach(b=>{SENT.all[b]=0;SENT.pos[b]=0;SENT.neg[b]=0;SENT.neu[b]=0;});
+    items.forEach(i=>{const b=i.브랜드;if(SENT.all[b]===undefined)return;SENT.all[b]++;if(i.감성==='긍정')SENT.pos[b]++;else if(i.감성==='부정')SENT.neg[b]++;else SENT.neu[b]++;});
+
+    // 주차별
+    const wkC=WEEKLY_DATES.map(()=>{const o={};BRANDS.forEach(b=>o[b]=0);return o;});
+    items.forEach(i=>{if(!i.작성일)return;const d=i.작성일.slice(0,10);for(let idx=0;idx<WEEKLY_DATES.length;idx++){const ws=WEEKLY_DATES[idx],we=idx<WEEKLY_DATES.length-1?WEEKLY_DATES[idx+1]:'9999-12-31';if(d>=ws&&d<we){if(wkC[idx][i.브랜드]!==undefined)wkC[idx][i.브랜드]++;break;}}});
+    BRANDS.forEach(b=>{WEEKLY_SOV[b]=wkC.map(wk=>{const tot=BRANDS.reduce((s,br)=>s+(wk[br]||0),0);return tot?Math.round((wk[b]||0)/tot*100):0;});});
+
+    renderMainDonut();renderKwSov('all');renderSentAll();renderAreaChart();
+    renderHealthGrid(calcHealthScores(items));
+
+    // 연관 kw SOV
+    document.querySelectorAll('.kw-btn').forEach(btn=>{const kw=btn.textContent.trim();if(kw==='전체')return;const kd={};BRANDS.forEach(b=>kd[b]=0);items.forEach(i=>{if((i.제목+' '+i.내용요약).includes(kw)&&kd[i.브랜드]!==undefined)kd[i.브랜드]++;});SOV[kw]=kd;});
+
+    // 핵심 키워드
+    const SW=new Set(['이','그','저','것','수','있','없','하','되','않','같','때','더','또','및','등','를','을','가','은','는','로','에','의','와','과','한','된','으로','에서','에게','하여','하는','하고','이다','합니다','있다','없다','됩니다','했다','한다','이런','정말','진짜','너무','서비스','이용','사용','단지','아파트','브랜드','입주민','분양','세대','관련','확인','진행']);
+    const bkm={};BRANDS.forEach(b=>bkm[b]={});
+    items.forEach(i=>{const b=i.브랜드;if(!bkm[b])return;const words=(i.제목+' '+i.내용요약).replace(/https?:\/\/\S+/gi,' ').replace(/[^\w가-힣\s]/g,' ').split(/\s+/).map(w=>w.trim()).filter(w=>w.length>=2&&!SW.has(w)&&!/^\d+$/.test(w)&&!BRANDS.some(br=>w.includes(br)));words.forEach(w=>{bkm[b][w]=(bkm[b][w]||0)+1;});});
+    const kwListEl=document.getElementById('brandKwList');kwListEl.innerHTML='';
+    BRANDS.forEach(b=>{const isXi=b==='자이';const topKws=Object.entries(bkm[b]).sort((a,c)=>c[1]-a[1]).slice(0,5).map(([w])=>w);if(!topKws.length)return;const chips=topKws.map(w=>`<span class="brand-chip${isXi?' xi':''}">${w}</span>`).join('');kwListEl.innerHTML+=`<div class="brand-kw-item"><span class="brand-kw-name" style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span><div class="brand-kw-chips">${chips}</div></div>`;});
+
+    // 버즈 카드
+    const bm={};BRANDS.forEach(b=>{bm[b]={count:0,pos:0,neg:0,neu:0};});
+    items.forEach(i=>{const b=i.브랜드;if(!bm[b])return;bm[b].count++;if(i.감성==='긍정')bm[b].pos++;else if(i.감성==='부정')bm[b].neg++;else bm[b].neu++;});
+    const buzzGrid=document.getElementById('buzzGrid');buzzGrid.innerHTML='';
+    [...BRANDS].filter(b=>activeBrands.has(b)).sort((x,y)=>bm[y].count-bm[x].count).forEach(b=>{
+      const d=bm[b],isXi=b==='자이';
+      const pPct=d.count?Math.round(d.pos/d.count*100):0,nPct=d.count?Math.round(d.neg/d.count*100):0,nuPct=100-pPct-nPct;
+      const card=document.createElement('div');
+      card.className='buzz-card'+(isXi?' xi-card':'');
+      card.innerHTML=`
+        <div class="buzz-brand">
+          <span style="display:inline-block;width:${isXi?9:7}px;height:${isXi?9:7}px;border-radius:50%;background:${BC[b]};flex-shrink:0"></span>
+          <span style="${isXi?'color:#60a5fa;font-weight:700':''}">${b}${isXi?' ✦':''}</span>
+        </div>
+        <div class="buzz-count" style="color:${isXi?'#60a5fa':BC[b]}">${d.count.toLocaleString()}<span style="font-size:12px;color:var(--text3);margin-left:3px">건</span></div>
+        <div class="buzz-sent-row">
+          <div class="buzz-sent-item">🟢 <span>${pPct}%</span></div>
+          <div class="buzz-sent-item">🔴 <span>${nPct}%</span></div>
+          <div class="buzz-sent-item">🟡 <span>${nuPct}%</span></div>
+        </div>
+        <div class="buzz-bar-stack">
+          <div class="bstack-pos" style="flex:${pPct}"></div>
+          <div class="bstack-neg" style="flex:${nPct}"></div>
+          <div class="bstack-neu" style="flex:${nuPct}"></div>
+        </div>`;
+      buzzGrid.appendChild(card);
+    });
+
+    // Hot 이슈
+    const lb={};items.forEach(i=>{const b=i.브랜드;if(!i.작성일)return;if(!lb[b]||i.작성일>lb[b].작성일)lb[b]=i;});
+    const hotList=document.getElementById('hotList');hotList.innerHTML='';
+    [...BRANDS].filter(b=>lb[b]).sort((x,y)=>lb[y].작성일.localeCompare(lb[x].작성일)).forEach(b=>{
+      const i=lb[b],isXi=b==='자이';
+      const sc=i.감성==='긍정'?'s-pos':i.감성==='부정'?'s-neg':'s-neu';
+      const se=i.감성==='긍정'?'🟢 긍정':i.감성==='부정'?'🔴 부정':'🟡 중립';
+      const topic=classifyTopic(i.제목,i.내용요약);
+      const urlHtml=i.원문URL?`<a href="${i.원문URL}" target="_blank" style="font-size:11px;color:var(--xi2);text-decoration:none">원문 ↗</a>`:'';
+      const premHtml=i.프리미엄==='Y'?`<span style="font-size:10px;color:var(--neu);border:1px solid rgba(240,180,66,0.3);padding:1px 6px;border-radius:6px;font-family:'DM Mono',monospace">💎</span>`:'';
+      const el=document.createElement('div');
+      el.className='hot-item'+(isXi?' xi-card':'');
+      el.dataset.brand=b;
+      el.innerHTML=`
+        <span class="hot-brand-tag" style="color:${BC[b]};${isXi?'font-size:13px;color:#60a5fa':''}">${b}${isXi?' ✦':''}</span>
+        <div class="hot-title">${i.제목.slice(0,80)}${i.제목.length>80?'...':''}</div>
+        <div class="hot-meta">${premHtml}<span class="topic-badge">${topic}</span><span class="sent-badge ${sc}">${se}</span><span class="hot-ch">${i.채널}·${i.작성일.slice(0,10)}</span>${urlHtml}</div>`;
+      hotList.appendChild(el);
+    });
+
+    // 피드
+    const PER=Math.ceil(30/BRANDS.length);
+    const bp={};BRANDS.forEach(b=>{bp[b]=items.filter(i=>i.브랜드===b).sort((a,b)=>b.작성일.localeCompare(a.작성일)).slice(0,PER);});
+    const fi=Object.values(bp).flat().sort((a,b)=>b.작성일.localeCompare(a.작성일)).slice(0,30);
+    const grid=document.getElementById('feedGrid');grid.innerHTML='';
+    fi.forEach(i=>{
+      const isXi=i.브랜드==='자이';
+      const sc=i.감성==='긍정'?'s-pos':i.감성==='부정'?'s-neg':'s-neu';
+      const se=i.감성==='긍정'?'🟢 긍정':i.감성==='부정'?'🔴 부정':'🟡 중립';
+      const st=i.감성==='긍정'?'pos':i.감성==='부정'?'neg':'neu';
+      const topic=classifyTopic(i.제목,i.내용요약);
+      const urlHtml=i.원문URL?`<a href="${i.원문URL}" target="_blank" class="feed-link">원문 ↗</a>`:'';
+      const card=document.createElement('div');
+      card.className='feed-card'+(isXi?' xi-card':'');
+      card.dataset.brand=i.브랜드;card.dataset.sent=st;card.dataset.topic=topic;card.dataset.premium=i.프리미엄||'';
+      card.innerHTML=`
+        <div class="feed-top">
+          <span class="feed-brand" style="color:${BC[i.브랜드]};${isXi?'color:#60a5fa':''}">${i.브랜드}${isXi?' ✦':''}</span>
+          <span class="feed-time">${timeAgo(i.작성일)}</span>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <span class="sent-badge ${sc}">${se}</span>
+          <span class="topic-badge">${topic}</span>
+          ${i.프리미엄==='Y'?`<span class="topic-badge" style="border-color:rgba(240,180,66,0.3);color:var(--neu)">💎 하이엔드</span>`:''}
+        </div>
+        <div class="feed-title">${i.제목.slice(0,60)}${i.제목.length>60?'...':''}</div>
+        ${i.내용요약?`<div class="feed-summary">${i.내용요약.slice(0,70)}...</div>`:''}
+        <div class="feed-bottom"><span class="feed-ch">${i.채널}</span>${urlHtml}</div>`;
+      grid.appendChild(card);
+    });
+
+    applyFeedFilter();
+    console.log(`✅ ${items.length}개 로드 완료`);
+  }catch(e){
+    console.error('Sheets 로드 오류:',e);
+    document.getElementById('feedGrid').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text3);font-size:13px">⚠️ 데이터 로드 실패. 스프레드시트 공개 설정을 확인해주세요.</div>';
+  }
+}
+
+renderBrandFilter();
+renderMainDonut();renderKwSov('all');renderSentAll();renderAreaChart();
+loadFromSheets();
+</script>
+</body>
+</html>
